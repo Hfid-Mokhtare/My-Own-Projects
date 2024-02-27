@@ -1,0 +1,513 @@
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <vector>
+#include <fstream>
+
+using namespace std;
+const string ClientsFileName = "Desktop\Networking_Acronyms.txt";
+
+void ShowMainMenue();
+
+struct sAcronyms
+{
+	string Acronym;
+	string MeaningOfAcronym;
+	bool MarkForDelet = false;
+};
+
+vector <string> SplitWords(string S1, string Delim)
+{
+	vector <string> vString;
+
+	int Pos = 0;
+	string sWord; // define a string variable
+
+	// use find() function to get the position of the delimiters
+	while ((Pos = S1.find(Delim)) != std::string::npos)
+	{
+
+		sWord = S1.substr(0, Pos); // store the word
+		if (sWord != "")
+		{
+			vString.push_back(sWord);
+		}
+
+		S1.erase(0, Pos + Delim.length()); /* erase()until
+		Position and move to next word. */
+	}
+
+	if (S1 != "")
+	{
+		vString.push_back(S1); // it adds last word of the string.
+	}
+
+	return vString;
+}
+
+string ConvertRecordToLine(sAcronyms Acronym, string Separator = ":")
+{
+	string stAcronymRecord = "";
+	stAcronymRecord += Acronym.Acronym + Separator;
+	stAcronymRecord += Acronym.MeaningOfAcronym;
+
+	return stAcronymRecord;
+
+}
+
+bool FindAcronym(string AcronymToSerch, sAcronyms& Acronym, vector <sAcronyms> vAcronyms)
+{
+
+	for (sAcronyms C : vAcronyms)
+	{
+		if (C.Acronym == AcronymToSerch)
+		{
+			Acronym = C;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+sAcronyms ConvertLinetoRecord(string stLine, string Seperator = ":")
+{
+	sAcronyms Acronym;
+	vector <string> vAcronymsData;
+
+	vAcronymsData = SplitWords(stLine, Seperator);
+
+	Acronym.Acronym = vAcronymsData[0];
+	Acronym.MeaningOfAcronym = vAcronymsData[1];
+	
+
+	return Acronym;
+}
+
+void PrintAcronymCard(sAcronyms Acronym)
+{
+	cout << "\n--------------------------------------------";
+	cout << "\nAcronym :" << Acronym.Acronym;
+	cout << "\nMeaning :" << Acronym.MeaningOfAcronym;
+	cout << "\n--------------------------------------------";
+
+}
+
+sAcronyms ChangeAcronymRecord(string AcronymToUpdate)
+{
+	sAcronyms Acronym;
+
+	
+
+	cout << "\n\nEnter The Acronym ?";
+	getline(cin >> ws, Acronym.Acronym);
+
+	cout << "Enter The meaning of Acronym ?";
+	getline(cin, Acronym.MeaningOfAcronym);
+
+	return Acronym;
+
+}
+
+vector <sAcronyms> SaveAcronymsDataToFile(string FileName, vector <sAcronyms> vAcronyms)
+{
+	fstream MyFile;
+	MyFile.open(FileName, ios::out); // overwrite
+
+
+	string DataLine;
+
+	if (MyFile.is_open())
+	{
+		for (sAcronyms& C : vAcronyms)
+		{
+			if (C.MarkForDelet == false)
+			{
+				//we only write records that are not marked for delete. 
+				DataLine = ConvertRecordToLine(C);
+				MyFile << DataLine << endl;
+			}
+		}
+
+		MyFile.close();
+	}
+	return vAcronyms;
+}
+
+bool UpdateAcronym(string AcronymToUpdate, vector <sAcronyms>& vAcronyms)
+{
+	sAcronyms Acronym;
+	char Answer = 'n';
+
+	if (FindAcronym(AcronymToUpdate, Acronym, vAcronyms))
+	{
+		PrintAcronymCard(Acronym);
+
+		cout << "\n\nAre you sure you want to Update this Acronum? y/n ? ";
+		cin >> Answer;
+
+		if (Answer == 'Y' || Answer == 'y')
+		{
+
+			for (sAcronyms& C : vAcronyms)
+			{
+				if (C.Acronym == AcronymToUpdate)
+				{
+					C = ChangeAcronymRecord(AcronymToUpdate);
+					break;
+				}
+			}
+
+			SaveAcronymsDataToFile(ClientsFileName, vAcronyms);
+
+			cout << "\n\nAcronym Updated Successfully.";
+			return true;
+
+		}
+
+	}
+	else
+	{
+		cout << "\nThis Acronym (" << AcronymToUpdate << ") is Not Found!";
+		return false;
+	}
+
+}
+
+vector <sAcronyms> LoadAcronymsDataFromFile(string FileName)
+{
+	vector <sAcronyms> vAcronyms;
+	fstream MyFile;
+	MyFile.open(FileName, ios::in); //Read mode
+
+	if (MyFile.is_open())
+	{
+
+		string Line = "";
+		sAcronyms Acronym;
+
+		while (getline(MyFile, Line))
+		{
+			Acronym = ConvertLinetoRecord(Line);
+			vAcronyms.push_back(Acronym);
+		}
+
+		MyFile.close();
+	}
+
+	return vAcronyms;
+}
+
+bool AcronymExists(string AcronymToFind, string FileName)
+{
+	vector <sAcronyms> vAcronym;
+	fstream MyFile;
+	MyFile.open(FileName, ios::in); //read Mode
+
+	if (MyFile.is_open())
+	{
+		string Line;
+		sAcronyms Acronym;
+
+		while (getline(MyFile, Line))
+		{
+			Acronym = ConvertLinetoRecord(Line);
+			if (Acronym.Acronym == AcronymToFind)
+			{
+				MyFile.close();
+				return true;
+			}
+			
+		}
+
+		MyFile.close();
+
+	}
+	return false;
+}
+
+void AddDataLineToFile(string FileName, string stDataLine)
+{
+	fstream MyFile;
+	MyFile.open(FileName, ios::out | ios::app);
+
+	if (MyFile.is_open())
+	{
+		MyFile << stDataLine << endl;
+
+		MyFile.close();
+	}
+}
+
+sAcronyms ReadNewAcronym()
+{
+	sAcronyms Acronym;
+	cout << "Enter The Acronym ?(CAPITAL LETTERS ONLY) : ";
+
+	//usage of std::ws will extract all the white space character
+	getline(cin >> ws, Acronym.Acronym);
+
+	while (AcronymExists(Acronym.Acronym, ClientsFileName))
+	{
+		cout << "This Acronym [" << Acronym.Acronym << "] alredy exists,\n";
+		cout << "Enter another Acronym ?";
+		getline(cin >> ws, Acronym.Acronym);
+		
+	}
+
+	cout << "Enter The Meaning of The Acronym ?";
+	getline(cin, Acronym.MeaningOfAcronym);
+
+	return Acronym;
+}
+
+void AddNewAcronym()
+{
+	sAcronyms Acronym;
+	Acronym = ReadNewAcronym();
+	AddDataLineToFile(ClientsFileName, ConvertRecordToLine(Acronym));
+
+}
+
+void AddNewAcronyms()
+{
+	char AddMore = 'Y';
+	do
+	{
+		cout << "Adding New Acronym:\n\n";
+
+		AddNewAcronym();
+		cout << "\nAcronym Added Successfully,do you want to add more Acronyms ?(Y/N)";
+		cin >> AddMore;
+
+	} while (toupper(AddMore) == 'Y');
+
+}
+
+void PrintAcronymRecord(sAcronyms Acronym)
+{
+	cout << "|" << left << setw(20) << Acronym.Acronym;
+	cout << ":" << left << setw(60) << Acronym.MeaningOfAcronym;
+	cout << "|";
+}
+
+void ShowAllAcronymsScreen()
+{
+	vector <sAcronyms> vAcronyms = LoadAcronymsDataFromFile(ClientsFileName);
+
+	cout << "\t\t\t\t\tAcronyms List (" << vAcronyms.size() << ") Acronym(s)\n" << endl;
+	cout << "+--------------------+------------------------------------------------------------+\n";
+	cout << "|" << left << setw(20) << "Acronyms";
+	cout << "|" << left << setw(60) << "Meaning";
+	cout << "|" << endl;
+	cout << "+--------------------+------------------------------------------------------------+\n";
+
+	for (sAcronyms Acronym : vAcronyms)
+	{
+		PrintAcronymRecord(Acronym);
+		cout << endl;
+	}
+
+	cout << "+--------------------+------------------------------------------------------------+\n";
+
+}
+
+void GoBackToMainMenue()
+{
+	cout << "\n\nPress any Key to go back to Main Menue...";
+	system("pause>0");
+	ShowMainMenue();
+}
+
+enum enMainMenueOption
+{
+	eAcronymsList = 1, eAddNewAcronym = 2,
+	eDeleteAcronym = 3, eUpdateAcronym = 4,
+	eFindAcronym = 5, eExit = 6
+};
+
+bool MarkClientForDelete(string AcronymToDelet, vector <sAcronyms>& vAcronyms)
+{
+
+	for (sAcronyms& C : vAcronyms)
+	{
+		if (C.Acronym == AcronymToDelet)
+		{
+			C.MarkForDelet = true;
+			return true;
+		}
+	}
+	return false;
+}
+
+string ReadAcronym()
+{
+	string Acronym = "";
+	cout << "\nPlease enter Acronym :";
+	cin >> Acronym;
+	return Acronym;
+}
+
+bool DeleteAcronym(string AcronymToDelet, vector <sAcronyms>& vAcronyms)
+{
+	sAcronyms Acronym;
+	char Answer = 'n';
+
+	if (FindAcronym(AcronymToDelet, Acronym, vAcronyms))
+	{
+		PrintAcronymCard(Acronym);
+
+		cout << "\n\nAre you sure you want delete this Acronym? y/n ? ";
+		cin >> Answer;
+
+		if (toupper(Answer) == 'Y')
+		{
+			MarkClientForDelete(AcronymToDelet, vAcronyms);
+			SaveAcronymsDataToFile(ClientsFileName, vAcronyms);
+
+			//refrech Clients
+			vAcronyms = LoadAcronymsDataFromFile(ClientsFileName);
+
+			cout << "\n\nAcronym Deleted Successfully.";
+			return true;
+
+		}
+
+	}
+	else
+	{
+		cout << "\nThis Acronym is (" << AcronymToDelet << ") is Not Found!";;
+		return false;
+	}
+
+}
+
+void ShowUpdateAcronymsScreen()
+{
+	cout << "\n--------------------------------------------\n";
+	cout << "\tUpdate Acronym Screen";
+	cout << "\n--------------------------------------------\n";
+
+	vector <sAcronyms> vAcronyms = LoadAcronymsDataFromFile(ClientsFileName);
+	string Acronym = ReadAcronym();
+	UpdateAcronym(Acronym, vAcronyms);
+
+}
+
+void ShowDeleteAcronymsScreen()
+{
+	cout << "\n--------------------------------------------\n";
+	cout << "\tDelete Acronym Screen";
+	cout << "\n--------------------------------------------\n";
+
+	vector <sAcronyms> vAcronyms = LoadAcronymsDataFromFile(ClientsFileName);
+	string Acronym = ReadAcronym();
+	DeleteAcronym(Acronym, vAcronyms);
+}
+
+void ShowAddNewAcronymScreen()
+{
+	
+	cout << "\n--------------------------------------------\n";
+	cout << "\tAdd New Acronym Screen";
+	cout << "\n--------------------------------------------\n";
+
+	AddNewAcronyms();
+}
+
+void ShowFindAcronymsScreen()
+{
+	cout << "\n--------------------------------------------\n";
+	cout << "\tFind Acronym Screen";
+	cout << "\n--------------------------------------------\n";
+
+	vector <sAcronyms> vAcronyms = LoadAcronymsDataFromFile(ClientsFileName);
+	sAcronyms Acronym;
+	string AcronymToSerch = ReadAcronym();
+	if (FindAcronym(AcronymToSerch, Acronym, vAcronyms))
+		PrintAcronymCard(Acronym);
+	else
+		cout << "\nThis Acronym [" << AcronymToSerch << "] is Not found!";
+}
+
+void ShowEndScreen()
+{
+	cout << "\n--------------------------------------------\n";
+	cout << "\tProgram Ends :-)";
+	cout << "\n--------------------------------------------\n";
+}
+
+short ReadMainMenueOption()
+{
+	short Choice = 0;
+	cout << "Choose what do you want to do : [1 to 6] ?";
+	cin >> Choice;
+
+	return Choice;
+}
+
+void PerformMainMenueOption(enMainMenueOption MainMenueOption)
+{
+	switch (MainMenueOption)
+	{
+	case enMainMenueOption::eAcronymsList:
+		system("cls");
+		ShowAllAcronymsScreen();
+		GoBackToMainMenue();
+		break;
+
+	case enMainMenueOption::eAddNewAcronym:
+		system("cls");
+		ShowAddNewAcronymScreen();
+		GoBackToMainMenue();
+		break;
+
+	case enMainMenueOption::eDeleteAcronym:
+		system("cls");
+		ShowDeleteAcronymsScreen();
+		GoBackToMainMenue();
+		break;
+
+	case enMainMenueOption::eUpdateAcronym:
+		system("cls");
+		ShowUpdateAcronymsScreen();
+		GoBackToMainMenue();
+		break;
+
+	case enMainMenueOption::eFindAcronym:
+		system("cls");
+		ShowFindAcronymsScreen();
+		GoBackToMainMenue();
+		break;
+
+	case enMainMenueOption::eExit:
+		system("cls");
+		ShowEndScreen();
+
+		break;
+	}
+}
+
+void ShowMainMenue()
+{
+	system("cls");
+	cout << "==================================================\n";
+	cout << right << setw(35) << "My Liste of Networking Acronyms Vocabulary\n";
+	cout << "==================================================\n";
+	cout << "\t[1] Show Acronyms List.\n";
+	cout << "\t[2] Add New Acronym.\n";
+	cout << "\t[3] Delete Acronym.\n";
+	cout << "\t[4] Update Acronym.\n";
+	cout << "\t[5] Find Acronym.\n";
+	cout << "\t[6] Exit.\n";
+	cout << "==================================================\n";
+	PerformMainMenueOption((enMainMenueOption)ReadMainMenueOption());
+}
+
+int main()
+{
+	ShowMainMenue();
+	system("pause>0");
+
+	return 0;
+}
