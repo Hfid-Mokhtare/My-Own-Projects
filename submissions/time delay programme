@@ -1,0 +1,23 @@
+#include<iostream> 
+#include <chrono>
+#include <thread>
+
+using namespace std;
+
+
+
+int main()
+{
+	using namespace std::this_thread;     // sleep_for, sleep_until
+	using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
+	using std::chrono::system_clock;
+
+	for (int i=1;i<=10;i++)
+	{
+		cout << "=>";
+		//sleep_for(10ns);
+		sleep_until(system_clock::now() + 500ms);
+	}
+
+	return 0; 
+} 
